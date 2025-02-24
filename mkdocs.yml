@@ -1,0 +1,52 @@
+site_name: files-ingestor
+repo_url: https://github.com/telekosmos/files-ingestor
+site_url: https://telekosmos.github.io/files-ingestor
+site_description: This is a template repository for Python projects that use uv for their dependency management following hexagonal architecture.
+site_author: Guillermo C. Martínez
+edit_uri: edit/main/docs/
+repo_name: telekosmos/files-ingestor
+copyright: Maintained by <a href="https://telekosmos.com">telekosmos</a>.
+
+nav:
+  - Home: index.md
+  - Modules: modules.md
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [files_ingestor]
+theme:
+  name: material
+  feature:
+    tabs: true
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: white
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/telekosmos/files-ingestor
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/files-ingestor
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true

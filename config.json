@@ -1,0 +1,69 @@
+{
+    "database": {
+        "connstring": "",
+        "name": "fortune100"
+    },
+    "llm": {
+        "deepseekr1": {
+            "name": "deepseek-r1:32b",
+            "base_url": "http://localhost:11434",
+            "timeout": 300,
+            "api_key": ""
+        },
+        "gemma2_tools": {
+            "name": "cow/gemma2_tools:27b",
+            "base_url": "http://localhost:11434",
+            "timeout": 300,
+            "api_key": ""
+        },
+        "anthropic": {
+            "name": `$ANTHROPIC_MODEL_NAME`,
+            "api_key": `$ANTHROPIC_API_KEY`
+        },
+        "mistralsmall24b": {
+            "name": "mistral-small:24b",
+            "base_url": "http://localhost:11434",
+            "timeout": 300,
+            "api_key": ""
+        },
+        "mistral7bq8_0": {
+            "name": "mistral:7b-instruct-v0.3-q8_0",
+            "base_url": "http://localhost:11434",
+            "timeout": 300,
+            "api_key": ""
+        }
+    },
+    "embeddings": {
+        "bgem3": {
+            "name": "bge-m3:latest",
+            "base_url": "http://localhost:11434",
+            "api_key": ""
+        },
+        "huggingface": {
+            "name": "BAAI/bge-m3",
+            "base_url": "https://api-inference.huggingface.co",
+            "api_key": `$HUGGINGFACEHUB_API_TOKEN`
+        }
+    },
+    "vectorstore": {
+        "qdrant": {
+            "url": `$QDRANT_SERVER`,
+            "collectionsShort": {
+                "news": "f100_newss",
+                "descriptions": "f100_descriptionss",
+                "full_docs_news" : "fortune100_512_docs_news",
+            },
+            "collections": {
+                "aws-overview": {
+                    "name": "aws-overview",
+                    "tool_description": "This tool provides information taken from AWS overview official documentation with descriptions of all products currently offered by Amazon Web Services (AWS), which can be of help when designing an AWS cloud architecture out of a description of the application or service to build",
+                }
+            }
+        }
+    },
+    "agent": {
+        "context": "You are a skilled Cloud architecture and engineer specialized in designing and building cloud infrastructure supported by AWS. You always take into account scalability, performance and budget requirements to give the best solution to to architecture the cloud infrastructure to the input problem.",
+        "useCollections": ["aws-overview"],
+        "zzzuseCollections": ["f100_newss", "f100_descriptionss"]
+    }
+}

@@ -1,0 +1,137 @@
+[project]
+name = "files-ingestor"
+version = "0.0.1"
+description = "This is a template repository for Python projects that use uv for their dependency management following hexagonal architecture."
+authors = [{ name = "Guillermo C. Martínez", email = "telekosmos@ymail.com" }]
+readme = "README.md"
+keywords = ['python']
+requires-python = ">=3.9,<4.0"
+classifiers = [
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "config>=0.5.1",
+    "fastapi[standard]>=0.115.8",
+    "langchain>=0.3.19",
+    "langchain-community>=0.3.18",
+    "llama-index-core>=0.12.19",
+    "llama-index-embeddings-huggingface>=0.5.1",
+    "llama-index-embeddings-ollama>=0.5.0",
+    "llama-index-extractors-entity>=0.3.1",
+    "llama-index-llms-anthropic>=0.6.5",
+    "llama-index-llms-ollama>=0.5.2",
+    "llama-index-readers-file>=0.4.5",
+    "llama-index-vector-stores-qdrant>=0.4.3",
+    "qdrant-client>=1.13.2",
+]
+
+[project.scripts]
+main_http = "files_ingestor.main_http:start"
+main_terminal = "files_ingestor.main_terminal:main"
+
+[project.urls]
+Homepage = "https://telekosmos.github.io/files-ingestor/"
+Repository = "https://github.com/telekosmos/files-ingestor"
+Documentation = "https://telekosmos.github.io/files-ingestor/"
+
+[dependency-groups]
+dev = [
+    "pytest>=7.2.0",
+    "pre-commit>=2.20.0",
+    "tox-uv>=1.11.3",
+    "deptry>=0.20.0",
+    "mypy>=0.991",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.6.9",
+    "mkdocs>=1.4.2",
+    "mkdocs-material>=8.5.10",
+    "mkdocstrings[python]>=0.26.1",
+]
+
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["files_ingestor"]
+
+[tool.mypy]
+files = ["files_ingestor"]
+disallow_untyped_defs = true
+disallow_any_unimported = true
+no_implicit_optional = true
+check_untyped_defs = true
+warn_return_any = true
+warn_unused_ignores = true
+show_error_codes = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+fix = true
+
+[tool.ruff.lint]
+select = [
+    # flake8-2020
+    "YTT",
+    # flake8-bandit
+    "S",
+    # flake8-bugbear
+    "B",
+    # flake8-builtins
+    "A",
+    # flake8-comprehensions
+    "C4",
+    # flake8-debugger
+    "T10",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+    # mccabe
+    "C90",
+    # pycodestyle
+    "E", "W",
+    # pyflakes
+    "F",
+    # pygrep-hooks
+    "PGH",
+    # pyupgrade
+    "UP",
+    # ruff
+    "RUF",
+    # tryceratops
+    "TRY",
+]
+ignore = [
+    # LineTooLong
+    "E501",
+    # DoNotAssignLambda
+    "E731",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.ruff.format]
+preview = true
+
+[tool.coverage.report]
+skip_empty = true
+
+[tool.coverage.run]
+branch = true
+source = ["files_ingestor"]
+
