@@ -1,14 +1,12 @@
 import logging
 
-import anthropic
-
 from files_ingestor.adapters import qdrant
 from files_ingestor.adapters.config import ConfigConfig
 from files_ingestor.adapters.default_logger import DefaultLoggerAdapter
 from files_ingestor.adapters.embedding_models.ollama import OllamaEmbeddingModel
 from files_ingestor.adapters.http import create_http_app
-from files_ingestor.adapters.llms.ollama import OllamaAdapter
 from files_ingestor.adapters.llms.anthropic import AnthropicAdapter
+from files_ingestor.adapters.llms.ollama import OllamaAdapter
 from files_ingestor.adapters.qdrant import QdrantRepository
 from files_ingestor.adapters.repositories.file_reader import FileReaderAdapter
 from files_ingestor.application.handlers.count_file_handler import CountFileHandler
@@ -17,9 +15,8 @@ from files_ingestor.application.handlers.qa_handler import QAHandler
 from files_ingestor.domain.ports.embedding_model import EmbeddingModelPort
 from files_ingestor.domain.ports.logger_port import LoggerPort
 from files_ingestor.domain.ports.vectorstore import VectorStorePort
-from files_ingestor.domain.services.react_agent import ReactAgent
 from files_ingestor.domain.services.file_processor_service import FileProcessorService
-
+from files_ingestor.domain.services.react_agent import ReactAgent
 
 # Instantiate adaptres for cross application concerns
 logger: LoggerPort = DefaultLoggerAdapter(log_level=logging.DEBUG)
