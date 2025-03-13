@@ -31,7 +31,7 @@ class OllamaAdapter(FunctionCallingLLMPort):
             base_url="http://localhost:11434",
             request_timeout=300)
         self.models = {
-            "llama_index": llama_index_model,
+            "llamaindex": llama_index_model,
             "langchain": langchain_model
         }
         self.logger.info(f"Using Ollama model {self.model_name}")

@@ -5,7 +5,7 @@ from langchain_anthropic.chat_models import ChatAnthropic
 from llama_index.core.llms.function_calling import FunctionCallingLLM
 from llama_index.llms.anthropic import Anthropic
 
-import files_ingestor.domain.ports.config as ConfigPort
+from files_ingestor.domain.ports.config import ConfigPort
 from files_ingestor.domain.ports.llm import FunctionCallingLLMPort
 from files_ingestor.domain.ports.logger_port import LoggerPort
 
@@ -14,18 +14,20 @@ class AnthropicAdapter(FunctionCallingLLMPort):
     def __init__(self, config: ConfigPort, logger: LoggerPort, model_name: Optional[str] = None):
         self.config = config
         self.logger = logger
-        self.model_name = model_name if model_name is not None else self.config.get("llm.anthropic.name")
-        api_key = self.config.get("llm.anthropic.api_key")
+        self.model_name = model_name if model_name is not None else self.config.get("llm.anthropic.name", None)
+        api_key = self.config.get("llm.anthropic.api_key", None)
         llama_index_model = Anthropic(
             model=self.model_name,
             api_key=api_key
         )
         langchain_model = ChatAnthropic(
-            model=self.model_name,
-            api_key=api_key
+            model_name=self.model_name,
+            api_key=api_key,
+            timeout=None,
+            stop=None
         )
         self.models = {
-            "llama_index": llama_index_model,
+            "llamaindex": llama_index_model,
             "langchain": langchain_model
         }
         self.logger.info(f"Using Anthropic {self.model_name}")
