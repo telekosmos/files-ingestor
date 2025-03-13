@@ -1,15 +1,22 @@
 import os
 from typing import Annotated
 
-from fastapi import FastAPI, File, Query, UploadFile
+from fastapi import FastAPI, File, Form, Query, UploadFile
+from llama_index.core.llms import ChatMessage
+from ollama import ChatResponse
 from pydantic import BaseModel
 
-from files_ingestor.application.commands.ingest_pdf import IngestPDFCmd
+from files_ingestor.adapters.config import ConfigConfig
+from files_ingestor.adapters.llms.anthropic import AnthropicAdapter
+from files_ingestor.adapters.llms.ollama import OllamaAdapter
+from files_ingestor.application.commands.ingest_pdf import IngestFolderCmd, IngestPDFCmd
 from files_ingestor.application.handlers.count_file_handler import CountFileHandler
+from files_ingestor.application.handlers.handler import Handler
 from files_ingestor.application.handlers.ingestion_handler import IngestionHandler
 from files_ingestor.application.handlers.qa_handler import QAHandler
 from files_ingestor.application.queries.count_file_query import CountFileQuery
 from files_ingestor.application.queries.question_query import QuestionQuery
+from files_ingestor.domain.ports.llm import FunctionCallingLLMPort
 from files_ingestor.domain.ports.logger_port import LoggerPort
 
 
@@ -21,7 +28,7 @@ class QueryRequest(BaseModel):
     question: str
 
 class HttpApp:
-    def __init__(self, logger: LoggerPort, qa_handler: QAHandler, ingestor_handler: IngestionHandler):
+    def __init__(self, logger: LoggerPort, qa_handler: QAHandler, ingestor_handler: Handler):
         self.app = FastAPI()
         self.logger = logger
         self.query_handler = qa_handler
@@ -53,7 +60,7 @@ class HttpApp:
             os.makedirs(upload_dir, exist_ok=True)
 
             # Save the uploaded file
-            file_path = os.path.join(upload_dir, file.filename)
+            file_path = os.path.join(upload_dir, file.filename) # type: ignore
             with open(file_path, "wb") as buffer:
                 buffer.write(await file.read())
 
@@ -64,13 +71,27 @@ class HttpApp:
             try:
                 self.ingestion_handler.handle(IngestPDFCmd(filename=file_path))
             except Exception as e:
-                self.logger.error(f"Error processing PDF: {str(e)}")  # noqa: TRY400 RUF010
+                self.logger.error("Error processing PDF", e)  # noqa: TRY400
                 return {"status": "error", "message": str(e)}
             else:
                 return {"status": "success", "filename": file.filename}
 
+        @self.app.post("/ingest-folder")
+        async def upload_folder(folder_path: str):
+            if not os.path.exists(folder_path):
+                raise ValueError(f"Folder {folder_path} does not exist")  # noqa: TRY003
 
-def create_http_app(logger: LoggerPort, query_handler: QAHandler, ingestor_handler: IngestionHandler):
+            try:
+                num_files = self.ingestion_handler.handle(IngestFolderCmd(folder_path=folder_path))
+            except Exception as e:
+                self.logger.error("Error processing folder", e)  # noqa: TRY400
+                return {"status": "error", "message": str(e)}
+            else:
+                return {"status": "success", "num_files": num_files}
+
+
+
+def create_http_app(logger: LoggerPort, query_handler: QAHandler, ingestor_handler: Handler):
     """Creates an HTTP app for processing files."""
     http_app = HttpApp(logger=logger, qa_handler=query_handler, ingestor_handler=ingestor_handler)
     return http_app.app

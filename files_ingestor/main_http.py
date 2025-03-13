@@ -4,15 +4,16 @@ from files_ingestor.adapters import qdrant
 from files_ingestor.adapters.config import ConfigConfig
 from files_ingestor.adapters.default_logger import DefaultLoggerAdapter
 from files_ingestor.adapters.embedding_models.ollama import OllamaEmbeddingModel
-from files_ingestor.adapters.http import create_http_app
+from files_ingestor.adapters.http import HttpApp, create_http_app
 from files_ingestor.adapters.llms.anthropic import AnthropicAdapter
 from files_ingestor.adapters.llms.ollama import OllamaAdapter
 from files_ingestor.adapters.qdrant import QdrantRepository
 from files_ingestor.adapters.repositories.file_reader import FileReaderAdapter
 from files_ingestor.application.handlers.count_file_handler import CountFileHandler
-from files_ingestor.application.handlers.ingestion_handler import IngestionHandler
+from files_ingestor.application.handlers.ingestion_handler import IngestionFolderHandler, IngestionHandler
 from files_ingestor.application.handlers.qa_handler import QAHandler
 from files_ingestor.domain.ports.embedding_model import EmbeddingModelPort
+from files_ingestor.domain.ports.file_reader_port import FileReaderPort
 from files_ingestor.domain.ports.logger_port import LoggerPort
 from files_ingestor.domain.ports.vectorstore import VectorStorePort
 from files_ingestor.domain.services.file_processor_service import FileProcessorService
@@ -23,7 +24,7 @@ logger: LoggerPort = DefaultLoggerAdapter(log_level=logging.DEBUG)
 config: ConfigConfig = ConfigConfig()
 
 # Instantiate infrastructure
-file_reader_adapter = FileReaderAdapter()
+file_reader_adapter: FileReaderPort = FileReaderAdapter()
 embedding_model: EmbeddingModelPort = OllamaEmbeddingModel()
 ollama_model_name: str = config.get("llm.mistralsmall24b.name")
 ollama_model_name: str = config.get("llm.gemma2_tools.name")
@@ -35,9 +36,10 @@ vector_repository: VectorStorePort = QdrantRepository(qdrant_url, logger=logger)
 
 # Instantiate the FileProcessorService (business logic)
 file_processor_service = FileProcessorService(logger,
+                                              config,
                                               vector_repository,
                                               embedding_model,
-                                              file_reader_adapter)
+                                              file_reader=file_reader_adapter)
 
 logger.info(f"Creating react agent with llm {llm.model_name}")
 react_agent = ReactAgent(embedding_model=embedding_model,
@@ -49,6 +51,7 @@ react_agent = ReactAgent(embedding_model=embedding_model,
 # CQS commands and queries handlers
 count_file_handler = CountFileHandler(file_processor_service)
 ingestion_handler = IngestionHandler(file_processor_service)
+ingestion_handler = IngestionFolderHandler(file_processor_service)
 qa_handler = QAHandler(react_agent)
 
 # Run HTTP interface
