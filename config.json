@@ -48,17 +48,6 @@
     "vectorstore": {
         "qdrant": {
             "url": `$QDRANT_SERVER`,
-            "collectionsShort": {
-                "news": "f100_newss",
-                "descriptions": "f100_descriptionss",
-                "full_docs_news" : "fortune100_512_docs_news"
-            },
-            "aws-collections": {
-                "aws-overview": {
-                    "name": "aws-overview",
-                    "tool_description": "This tool provides information taken from AWS overview official documentation with descriptions of all products currently offered by Amazon Web Services (AWS), which can be of help when designing an AWS cloud architecture out of a description of the application or service to build",
-                }
-            },
             "collections": {
                 "book-library": {
                     "name": "book-library",
