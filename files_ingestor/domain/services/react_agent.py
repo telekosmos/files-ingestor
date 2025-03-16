@@ -54,13 +54,14 @@ class ReactAgent:
         self.logger.info(f"Tools provided to the agent: {tool_names}")
         # context=("You are a financial and economic analyst expert in Fortune 100 companies." 
         #     "Your will answer the questions about these companies and the market they belong to from a financial and economic point of view as a veteran finantial investor")
+        llm_for_agent = self.llm.get_model("llamaindex")
         self.agent: ReActAgent = ReActAgent(
             tools=self.tools,
-            llm=self.llm.get_model(),
+            llm=llm_for_agent,
             verbose=True,
             max_iterations=15,
             context=agent_context,
-            memory=BaseMemory.from_defaults(llm=self.llm))
+            memory=BaseMemory.from_defaults(llm=llm_for_agent))
 
     def query(self, question: str) -> str:
         self.logger.info(f"Question received: {question}")
