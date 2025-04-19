@@ -16,20 +16,9 @@ class AnthropicAdapter(FunctionCallingLLMPort):
         self.logger = logger
         self.model_name = model_name if model_name is not None else self.config.get("llm.anthropic.name", None)
         api_key = self.config.get("llm.anthropic.api_key", None)
-        llama_index_model = Anthropic(
-            model=self.model_name,
-            api_key=api_key
-        )
-        langchain_model = ChatAnthropic(
-            model_name=self.model_name,
-            api_key=api_key,
-            timeout=None,
-            stop=None
-        )
-        self.models = {
-            "llamaindex": llama_index_model,
-            "langchain": langchain_model
-        }
+        llama_index_model = Anthropic(model=self.model_name, api_key=api_key)
+        langchain_model = ChatAnthropic(model_name=self.model_name, api_key=api_key, timeout=None, stop=None)
+        self.models = {"llamaindex": llama_index_model, "langchain": langchain_model}
         self.logger.info(f"Using Anthropic {self.model_name}")
 
     def get_model(self, library: str) -> FunctionCallingLLM:

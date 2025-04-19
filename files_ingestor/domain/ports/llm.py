@@ -8,4 +8,3 @@ class FunctionCallingLLMPort(ABC):
 
     @abstractmethod
     def get_model(self, library: str) -> FunctionCallingLLM: ...
-
