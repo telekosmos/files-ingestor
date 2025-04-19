@@ -11,9 +11,14 @@ class IngestionHandler(Handler):
     def __init__(self, ingestor_service: FileProcessorService):
         self.ingestor = ingestor_service
 
-    def handle(self, cmd: IngestPDFCmd):
+    def handle(self, cmd: IngestPDFCmd | IngestFolderCmd):
         """Handles the query and invokes the domain service."""
-        return self.ingestor.ingest_pdf(cmd.filepath)
+        match cmd:
+            case IngestPDFCmd():
+                return self.ingestor.ingest_pdf(cmd.filepath)
+            case IngestFolderCmd():
+                return self.ingestor.ingest_folder(cmd.folder_path)
+
 
 class IngestionFolderHandler(Handler):
     """Handles the ingestion of files in folder"""
