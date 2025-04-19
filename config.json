@@ -20,6 +20,10 @@
             "name": `$ANTHROPIC_MODEL_NAME`,
             "api_key": `$ANTHROPIC_API_KEY`
         },
+        "anthropicSonnet": {
+            "name": `$ANTHROPIC_SONNET`,
+            "api_key": `$ANTHROPIC_API_KEY`
+        },
         "mistralsmall24b": {
             "name": "mistral-small:24b",
             "base_url": "http://localhost:11434",
