@@ -10,7 +10,10 @@ from files_ingestor.adapters.llms.ollama import OllamaAdapter
 from files_ingestor.adapters.qdrant import QdrantRepository
 from files_ingestor.adapters.repositories.file_reader import FileReaderAdapter
 from files_ingestor.application.handlers.count_file_handler import CountFileHandler
-from files_ingestor.application.handlers.ingestion_handler import IngestionFolderHandler, IngestionHandler
+from files_ingestor.application.handlers.ingestion_handler import (
+    IngestionFolderHandler,
+    IngestionHandler,
+)
 from files_ingestor.application.handlers.qa_handler import QAHandler
 from files_ingestor.domain.ports.embedding_model import EmbeddingModelPort
 from files_ingestor.domain.ports.file_reader_port import FileReaderPort
@@ -35,18 +38,14 @@ qdrant_url: str = config.get("vectorstore.qdrant.url")
 vector_repository: VectorStorePort = QdrantRepository(qdrant_url, logger=logger)
 
 # Instantiate the FileProcessorService (business logic)
-file_processor_service = FileProcessorService(logger,
-                                              config,
-                                              vector_repository,
-                                              embedding_model,
-                                              file_reader=file_reader_adapter)
+file_processor_service = FileProcessorService(
+    logger, config, vector_repository, embedding_model, file_reader=file_reader_adapter
+)
 
 logger.info(f"Creating react agent with llm {llm.model_name}")
-react_agent = ReactAgent(embedding_model=embedding_model,
-                        llm=llm,
-                        vector_store=vector_repository,
-                        config=config,
-                        logger=logger)
+react_agent = ReactAgent(
+    embedding_model=embedding_model, llm=llm, vector_store=vector_repository, config=config, logger=logger
+)
 
 # CQS commands and queries handlers
 count_file_handler = CountFileHandler(file_processor_service)
@@ -57,9 +56,12 @@ qa_handler = QAHandler(react_agent)
 # Run HTTP interface
 app = create_http_app(logger, query_handler=qa_handler, ingestor_handler=ingestion_handler)
 
+
 def start():
     import uvicorn
+
     uvicorn.run("files_ingestor.main_http:app", host="0.0.0.0", port=8000, reload=True)
+
 
 if __name__ == "__main__":
     start()

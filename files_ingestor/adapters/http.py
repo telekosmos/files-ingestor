@@ -24,8 +24,10 @@ class FileProcessingRequest(BaseModel):
     file: str
     operations: str
 
+
 class QueryRequest(BaseModel):
     question: str
+
 
 class HttpApp:
     def __init__(self, logger: LoggerPort, qa_handler: QAHandler, ingestor_handler: Handler):
@@ -33,25 +35,18 @@ class HttpApp:
         self.logger = logger
         self.query_handler = qa_handler
         self.ingestion_handler = ingestor_handler
-        # self.react_agent = react_agent.ReactAgent(logger=logger)
+        # self.react_agent = react_agent.ReactAgent(logger=logger)
 
         @self.app.get("/status")
         async def status():
             return {"status": "ok"}
 
-        # @self.app.get("/process-file")
-        # async def process_file(request: Annotated[FileProcessingRequest, Query()]):
-        #     query = CountFileQuery(file_name=request.file, operations=request.operations.split(","))
-        #     self.logger.info(f"query: CountFileQuery({query.file_name}, {query.operations})")
-        #     result = query_handler.handle(query)
-        #     return {"result": result}
-
-        @self.app.get("/query")
-        async def query(request: Annotated[QueryRequest, Query()]):
-            # response = self.react_agent.query(question.question)
-            self.logger.info(f"Question parameter: {request.question}")
-            response = self.query_handler.handle(query=QuestionQuery(query=request.question))
-            return {"response": response.response}
+        # @self.app.get("/query")
+        # async def query(request: Annotated[QueryRequest, Query()]):
+        #     # response = self.react_agent.query(question.question)
+        #     self.logger.info(f"Question parameter: {request.question}")
+        #     response = self.query_handler.handle(query=QuestionQuery(query=request.question))
+        #     return {"response": response.response}
 
         @self.app.post("/ingest-pdf")
         async def upload_pdf(file: UploadFile = File(...)):
@@ -60,7 +55,7 @@ class HttpApp:
             os.makedirs(upload_dir, exist_ok=True)
 
             # Save the uploaded file
-            file_path = os.path.join(upload_dir, file.filename) # type: ignore
+            file_path = os.path.join(upload_dir, file.filename)  # type: ignore
             with open(file_path, "wb") as buffer:
                 buffer.write(await file.read())
 
@@ -88,7 +83,6 @@ class HttpApp:
                 return {"status": "error", "message": str(e)}
             else:
                 return {"status": "success", "num_files": num_files}
-
 
 
 def create_http_app(logger: LoggerPort, query_handler: QAHandler, ingestor_handler: Handler):
