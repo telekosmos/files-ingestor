@@ -4,7 +4,7 @@ from files_ingestor.domain.ports.logger_port import LoggerPort
 
 
 class DefaultLoggerAdapter(LoggerPort):
-    def __init__(self, logger_name='files_ingestor', log_level=logging.INFO):
+    def __init__(self, logger_name="files_ingestor", log_level=logging.INFO):
         """
         Initialize the logger with a specific name and log level.
 
@@ -17,7 +17,7 @@ class DefaultLoggerAdapter(LoggerPort):
         # Create a console handler if no handlers exist
         if not self.logger.handlers:
             console_handler = logging.StreamHandler()
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             console_handler.setFormatter(formatter)
             self.logger.addHandler(console_handler)
 
