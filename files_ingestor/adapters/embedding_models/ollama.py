@@ -10,4 +10,3 @@ class OllamaEmbeddingModel(EmbeddingModelPort):
 
     def get_model(self) -> OllamaEmbedding:
         return self._model
- 
