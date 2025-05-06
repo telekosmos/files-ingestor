@@ -1,5 +1,3 @@
-from typing import List, Tuple
-
 from llama_index.core import VectorStoreIndex, get_response_synthesizer
 from llama_index.core.indices.vector_store import VectorIndexAutoRetriever, VectorIndexRetriever
 from llama_index.core.query_engine import RetrieverQueryEngine
@@ -57,7 +55,7 @@ class LlamaIndexWrapper:
                 MetadataInfo(name="company_id", description="The company id", type="str"),
                 MetadataInfo(name="description", description="The company description", type="str"),
                 MetadataInfo(name="title", description="The news title and topic", type="str"),
-                #  MetadataInfo(name="sector", description="The company sector", type="str")
+                # MetadataInfo(name="sector", description="The company sector", type="str")
             ],
         )
         retriever = VectorIndexAutoRetriever(
@@ -80,7 +78,7 @@ class LlamaIndexWrapper:
         vector_store: VectorStorePort,
         embedding_model: EmbeddingModelPort,
         llm: FunctionCallingLLMPort,
-    ) -> Tuple[RetrieverQueryEngine, VectorIndexRetriever]:
+    ) -> tuple[RetrieverQueryEngine, VectorIndexRetriever]:
         retriever = LlamaIndexWrapper.mk_vector_retriever(collection_name, topk, vector_store, embedding_model)
         response_synthesizer = get_response_synthesizer(
             response_mode="tree_summarize", llm=llm.get_model(), verbose=True

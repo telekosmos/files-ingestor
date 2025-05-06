@@ -52,4 +52,4 @@ class DefaultLoggerAdapter(LoggerPort):
         :param message: Error message to log
         :param error: Exception associated with the error
         """
-        self.logger.error(f"{message}: {str(error)}", exc_info=True)
+        self.logger.error(f"{message}: {error!s}", exc_info=True)

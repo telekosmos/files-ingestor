@@ -16,8 +16,8 @@ class ConfigConfig(ConfigPort):
     def get(self, key: str, default: Optional[Any] = None) -> Any:
         try:
             return self.cfg[key]
-        except config.ConfigError as ce:  # type: ignore
+        except config.ConfigError:
             if default is not None:
                 return default
             else:
-                raise ce
+                raise

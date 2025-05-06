@@ -1,5 +1,5 @@
-from typing import List, Iterator, Protocol
-from abc import ABC, abstractmethod
+from abc import abstractmethod
+from typing import Protocol
 
 
 class CloudStoragePort(Protocol):
@@ -8,14 +8,14 @@ class CloudStoragePort(Protocol):
     @abstractmethod
     def download_file(self, url: str, local_path: str) -> str:
         """Downloads a file from cloud storage to local path.
-        
+
         Args:
             url: The cloud storage URL (s3://, file://, etc.)
             local_path: Where to save the file locally
-            
+
         Returns:
             str: Path to the downloaded file
-            
+
         Raises:
             ValueError: If URL is invalid or file not found
             IOError: If download fails
@@ -25,14 +25,14 @@ class CloudStoragePort(Protocol):
     @abstractmethod
     def list_files(self, url: str, recursive: bool = False) -> list[str]:
         """Lists files in a cloud storage path.
-        
+
         Args:
             url: The cloud storage URL (s3://, file://, etc.)
             recursive: Whether to list files recursively
-            
+
         Returns:
             list[str]: List of file URLs
-            
+
         Raises:
             ValueError: If URL is invalid
             IOError: If listing fails

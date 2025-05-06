@@ -1,17 +1,14 @@
 import logging
 
-from files_ingestor.adapters import qdrant
 from files_ingestor.adapters.config import ConfigConfig
 from files_ingestor.adapters.default_logger import DefaultLoggerAdapter
 from files_ingestor.adapters.embedding_models.ollama import OllamaEmbeddingModel
-from files_ingestor.adapters.http import HttpApp, create_http_app
+from files_ingestor.adapters.http_app import create_http_app
 from files_ingestor.adapters.llms.anthropic import AnthropicAdapter
 from files_ingestor.adapters.llms.ollama import OllamaAdapter
 from files_ingestor.adapters.qdrant import QdrantRepository
 from files_ingestor.adapters.repositories.file_reader import FileReaderAdapter
-from files_ingestor.application.handlers.count_file_handler import CountFileHandler
 from files_ingestor.application.handlers.ingestion_handler import (
-    IngestionFolderHandler,
     IngestionHandler,
 )
 from files_ingestor.application.handlers.qa_handler import QAHandler
@@ -49,7 +46,6 @@ react_agent = ReactAgent(
 qa_handler = QAHandler(react_agent)
 
 # CQS commands and queries handlers
-count_file_handler = CountFileHandler(file_processor_service)
 ingestion_handler = IngestionHandler(file_processor_service)
 # ingestion_handler = IngestionFolderHandler(file_processor_service)
 
@@ -60,7 +56,7 @@ app = create_http_app(logger, query_handler=qa_handler, ingestor_handler=ingesti
 def start():
     import uvicorn
 
-    uvicorn.run("files_ingestor.main_http:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("files_ingestor.main_http:app", host="127.0.0.1", port=8000, reload=True)
 
 
 if __name__ == "__main__":

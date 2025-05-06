@@ -1,9 +1,7 @@
 from __future__ import annotations  # noqa: I001
 
-# from files_ingestor.application.handlers.count_file_handler import CountFileHandler
 from files_ingestor.application.handlers.handler import Handler
 from files_ingestor.application.commands.ingest_pdf import IngestPDFCmd
-from files_ingestor.application.queries.count_file_query import CountFileQuery
 from files_ingestor.domain.ports.logger_port import LoggerPort
 
 

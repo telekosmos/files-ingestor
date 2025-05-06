@@ -5,7 +5,6 @@ from files_ingestor.adapters.default_logger import DefaultLoggerAdapter
 from files_ingestor.adapters.embedding_models.ollama import OllamaEmbeddingModel
 from files_ingestor.adapters.repositories.file_reader import FileReaderAdapter
 from files_ingestor.adapters.terminal import TerminalAdapter
-from files_ingestor.application.handlers.count_file_handler import CountFileHandler
 from files_ingestor.application.handlers.ingestion_handler import IngestionHandler
 from files_ingestor.domain.ports.config import ConfigPort
 from files_ingestor.domain.ports.embedding_model import EmbeddingModelPort
@@ -26,7 +25,6 @@ def main():
     file_processor_service = FileProcessorService(logger, config, None, embedding_model, file_reader_adapter)
 
     # Instantiate the Query Handler
-    # count_file_handler = CountFileHandler(file_processor_service)
     ingestion_handler = IngestionHandler(file_processor_service)
 
     terminal_adapter = TerminalAdapter(logger, ingestion_handler)

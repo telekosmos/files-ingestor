@@ -1,7 +1,6 @@
 import os
-import re
 import tempfile
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import dotenv
 from langchain_community.document_loaders.pdf import PyPDFLoader
@@ -68,61 +67,61 @@ class FileProcessorService(FileProcessorPort):
             case IngestCloudStorageCmd():
                 return self.ingest_cloud_storage(cmd.url, cmd.recursive)
             case _:
-                raise ValueError(f"Unknown command type: {type(cmd)}")
+                raise ValueError(f"Unknown command type: {type(cmd)}")  # noqa: TRY003
 
     def _get_storage_adapter(self, url: str) -> CloudStoragePort:
         """Get the appropriate storage adapter for the URL."""
-        if url.startswith('s3://'):
+        if url.startswith("s3://"):
             return self.s3_storage
-        elif url.startswith('file://'):
+        elif url.startswith("file://"):
             return self.local_storage
         else:
-            raise ValueError(f'Unsupported URL scheme: {url}')
+            raise ValueError(f"Unsupported URL scheme: {url}")  # noqa: TRY003
 
     def ingest_cloud_storage(self, url: str, recursive: bool = False) -> int:
         """Ingests files from a cloud storage URL."""
         try:
             # Get appropriate storage adapter
             storage = self._get_storage_adapter(url)
-            
+
             # List all files at the URL
             files = storage.list_files(url, recursive=recursive)
-            
+
             # Filter for PDF files
-            pdf_files = [f for f in files if f.lower().endswith('.pdf')]
+            pdf_files = [f for f in files if f.lower().endswith(".pdf")]
             if not pdf_files:
                 self.logger.warn(f"No PDF files found at {url}")
                 return 0
-                
+
             processed = 0
-            temp_dir = tempfile.mkdtemp(prefix='cloud_storage_')
-            
+            temp_dir = tempfile.mkdtemp(prefix="cloud_storage_")
+
             try:
                 for file_url in pdf_files:
                     # Download to temp location
                     filename = os.path.basename(file_url)
                     local_path = os.path.join(temp_dir, filename)
-                    
+
                     try:
                         storage.download_file(file_url, local_path)
                         self.ingest_pdf(local_path)
                         processed += 1
-                    except (ValueError, IOError) as e:
-                        self.logger.error(f"Failed to process {file_url}: {str(e)}")
+                    except (OSError, ValueError) as e:
+                        self.logger.error(f"Failed to process {file_url}", e)  # noqa: TRY400
                         continue
                     finally:
                         # Clean up downloaded file
                         if os.path.exists(local_path):
                             os.unlink(local_path)
-                            
+
                 return processed
             finally:
                 # Clean up temp directory
                 if os.path.exists(temp_dir):
                     os.rmdir(temp_dir)
-                    
+
         except Exception as e:
-            self.logger.error(f"Error processing cloud storage: {str(e)}")
+            self.logger.error("Error processing cloud storage", e)  # noqa: TRY400
             raise
 
     def ingest_pdf(self, pdf_filepath: str) -> Sequence[BaseNode]:
@@ -156,7 +155,7 @@ class FileProcessorService(FileProcessorPort):
 
     def ingest_folder(self, folder_path: str) -> int:
         num_files = 0
-        for root, dirs, files in os.walk(folder_path):
+        for root, _, files in os.walk(folder_path):
             for file in files:
                 if file.endswith(".pdf"):
                     self.logger.info(f"Ingesting {file} from {folder_path}")

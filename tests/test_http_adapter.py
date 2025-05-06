@@ -1,17 +1,13 @@
 import os
 import unittest
 import unittest.mock
-from unittest import mock
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock
 
 from fastapi.testclient import TestClient
 
-from files_ingestor.adapters.http import create_http_app
-from files_ingestor.application.handlers.count_file_handler import CountFileHandler
+from files_ingestor.adapters.http_app import create_http_app
 from files_ingestor.application.handlers.ingestion_handler import IngestionHandler
 from files_ingestor.application.handlers.qa_handler import QAHandler
-from files_ingestor.application.queries.count_file_query import CountFileQuery
-from files_ingestor.domain.ports.file_processor_port import FileProcessorPort
 from files_ingestor.domain.ports.logger_port import LoggerPort
 
 
@@ -22,9 +18,7 @@ class TestHttpAdapter(unittest.TestCase):
         self.mock_qa_handler = Mock(spec=QAHandler)
         self.mock_ingestor_handler = Mock(spec=IngestionHandler)
         self.app = create_http_app(
-            logger=self.mock_logger,
-            query_handler=self.mock_qa_handler,
-            ingestor_handler=self.mock_ingestor_handler
+            logger=self.mock_logger, query_handler=self.mock_qa_handler, ingestor_handler=self.mock_ingestor_handler
         )
         self.client = TestClient(self.app)
 
@@ -41,10 +35,7 @@ class TestHttpAdapter(unittest.TestCase):
         self.mock_ingestor_handler.handle.return_value = []  # Mock successful ingestion
 
         # Send request
-        response = self.client.post(
-            "/ingest-pdf",
-            files={"file": ("test.pdf", test_content, "application/pdf")}
-        )
+        response = self.client.post("/ingest-pdf", files={"file": ("test.pdf", test_content, "application/pdf")})
 
         # Verify response
         self.assertEqual(response.status_code, 200)
@@ -65,17 +56,11 @@ class TestHttpAdapter(unittest.TestCase):
 
         try:
             # Make request
-            response = self.client.post(
-                "/ingest-folder",
-                params={"folder_path": test_folder_path}
-            )
+            response = self.client.post("/ingest-folder", params={"folder_path": test_folder_path})
 
             # Verify response
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.json(), {
-                "status": "success",
-                "num_files": 1
-            })
+            self.assertEqual(response.json(), {"status": "success", "num_files": 1})
 
             # Verify handler was called
             self.mock_ingestor_handler.handle.assert_called_once()
@@ -92,20 +77,14 @@ class TestHttpAdapter(unittest.TestCase):
         self.mock_ingestor_handler.handle.return_value = 3  # Simulate processing 3 PDF files
 
         # Test data
-        test_request = {
-            "url": "s3://test-bucket/pdfs/",
-            "recursive": True
-        }
+        test_request = {"url": "s3://test-bucket/pdfs/", "recursive": True}
 
         # Make request to the endpoint
         response = self.client.post("/ingest-cloud", json=test_request)
 
         # Verify response
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {
-            "status": "success",
-            "num_files": 3
-        })
+        self.assertEqual(response.json(), {"status": "success", "num_files": 3})
 
         # Verify handler was called with correct command
         self.mock_ingestor_handler.handle.assert_called_once()
@@ -119,20 +98,14 @@ class TestHttpAdapter(unittest.TestCase):
         self.mock_ingestor_handler.handle.side_effect = ValueError("Invalid S3 URL")
 
         # Test data with invalid URL
-        test_request = {
-            "url": "invalid://test-bucket/pdfs/",
-            "recursive": True
-        }
+        test_request = {"url": "invalid://test-bucket/pdfs/", "recursive": True}
 
         # Make request to the endpoint
         response = self.client.post("/ingest-cloud", json=test_request)
 
         # Verify error response
         self.assertEqual(response.status_code, 200)  # FastAPI still returns 200 as we handle the error
-        self.assertEqual(response.json(), {
-            "status": "error",
-            "message": "Invalid S3 URL"
-        })
+        self.assertEqual(response.json(), {"status": "error", "message": "Invalid S3 URL"})
 
     def test_ingest_cloud_storage_endpoint_processing_error(self):
         """Test cloud storage ingestion with processing error."""
@@ -141,26 +114,17 @@ class TestHttpAdapter(unittest.TestCase):
         self.mock_ingestor_handler.handle.side_effect = error
 
         # Test data
-        test_request = {
-            "url": "s3://test-bucket/pdfs/",
-            "recursive": True
-        }
+        test_request = {"url": "s3://test-bucket/pdfs/", "recursive": True}
 
         # Make request to the endpoint
         response = self.client.post("/ingest-cloud", json=test_request)
 
         # Verify error response
         self.assertEqual(response.status_code, 200)  # FastAPI still returns 200 as we handle the error
-        self.assertEqual(response.json(), {
-            "status": "error",
-            "message": "Failed to process S3 files"
-        })
+        self.assertEqual(response.json(), {"status": "error", "message": "Failed to process S3 files"})
 
         # Verify error was logged
-        self.mock_logger.error.assert_called_once_with(
-            "Error processing cloud storage",
-            error=error
-        )
+        self.mock_logger.error.assert_called_once_with("Error processing cloud storage", error=error)
 
 
 if __name__ == "__main__":
