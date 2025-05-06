@@ -46,12 +46,12 @@ logger.info(f"Creating react agent with llm {llm.model_name}")
 react_agent = ReactAgent(
     embedding_model=embedding_model, llm=llm, vector_store=vector_repository, config=config, logger=logger
 )
+qa_handler = QAHandler(react_agent)
 
 # CQS commands and queries handlers
 count_file_handler = CountFileHandler(file_processor_service)
 ingestion_handler = IngestionHandler(file_processor_service)
-ingestion_handler = IngestionFolderHandler(file_processor_service)
-qa_handler = QAHandler(react_agent)
+# ingestion_handler = IngestionFolderHandler(file_processor_service)
 
 # Run HTTP interface
 app = create_http_app(logger, query_handler=qa_handler, ingestor_handler=ingestion_handler)

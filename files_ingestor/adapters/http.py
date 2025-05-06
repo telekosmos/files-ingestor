@@ -9,7 +9,11 @@ from pydantic import BaseModel
 from files_ingestor.adapters.config import ConfigConfig
 from files_ingestor.adapters.llms.anthropic import AnthropicAdapter
 from files_ingestor.adapters.llms.ollama import OllamaAdapter
-from files_ingestor.application.commands.ingest_pdf import IngestFolderCmd, IngestPDFCmd
+from files_ingestor.application.commands.ingest_pdf import (
+    IngestCloudStorageCmd,
+    IngestFolderCmd,
+    IngestPDFCmd,
+)
 from files_ingestor.application.handlers.count_file_handler import CountFileHandler
 from files_ingestor.application.handlers.handler import Handler
 from files_ingestor.application.handlers.ingestion_handler import IngestionHandler
@@ -27,6 +31,12 @@ class FileProcessingRequest(BaseModel):
 
 class QueryRequest(BaseModel):
     question: str
+
+
+class CloudStorageRequest(BaseModel):
+    """Request model for cloud storage URL ingestion."""
+    url: str
+    recursive: bool = True
 
 
 class HttpApp:
@@ -66,7 +76,7 @@ class HttpApp:
             try:
                 self.ingestion_handler.handle(IngestPDFCmd(filename=file_path))
             except Exception as e:
-                self.logger.error("Error processing PDF", e)  # noqa: TRY400
+                self.logger.error("Error processing PDF", error=e)  # noqa: TRY400
                 return {"status": "error", "message": str(e)}
             else:
                 return {"status": "success", "filename": file.filename}
@@ -79,10 +89,36 @@ class HttpApp:
             try:
                 num_files = self.ingestion_handler.handle(IngestFolderCmd(folder_path=folder_path))
             except Exception as e:
-                self.logger.error("Error processing folder", e)  # noqa: TRY400
+                self.logger.error("Error processing folder", error=e)  # noqa: TRY400
                 return {"status": "error", "message": str(e)}
             else:
                 return {"status": "success", "num_files": num_files}
+
+        @self.app.post("/ingest-cloud")
+        async def ingest_cloud_storage(request: CloudStorageRequest):
+            """
+            Ingest files from a cloud storage URL.
+
+            Args:
+                request (CloudStorageRequest): Request containing cloud storage URL and options
+
+            Returns:
+                dict: Status and count of processed files
+            """
+            try:
+                num_files = self.ingestion_handler.handle(
+                    IngestCloudStorageCmd(
+                        url=request.url,
+                        recursive=request.recursive
+                    )
+                )
+                return {"status": "success", "num_files": num_files}
+            except ValueError as e:
+                self.logger.error("Invalid cloud storage request", error=e)
+                return {"status": "error", "message": str(e)}
+            except Exception as e:
+                self.logger.error("Error processing cloud storage", error=e)  # noqa: TRY400
+                return {"status": "error", "message": str(e)}
 
 
 def create_http_app(logger: LoggerPort, query_handler: QAHandler, ingestor_handler: Handler):

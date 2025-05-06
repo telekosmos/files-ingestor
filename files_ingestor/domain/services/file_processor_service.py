@@ -1,4 +1,6 @@
 import os
+import re
+import tempfile
 from typing import Sequence, Union
 
 import dotenv
@@ -9,6 +11,9 @@ from llama_index.core.node_parser.text.sentence import SentenceSplitter
 from llama_index.core.schema import BaseNode
 from llama_index.core.storage.docstore.simple_docstore import SimpleDocumentStore
 
+from files_ingestor.application.commands import Command
+from files_ingestor.application.commands.ingest_pdf import IngestCloudStorageCmd, IngestFolderCmd, IngestPDFCmd
+from files_ingestor.domain.ports.cloud_storage_port import CloudStoragePort
 from files_ingestor.domain.ports.config import ConfigPort
 from files_ingestor.domain.ports.embedding_model import EmbeddingModelPort
 from files_ingestor.domain.ports.file_processor_port import FileProcessorPort
@@ -26,15 +31,19 @@ class FileProcessorService(FileProcessorPort):
         self,
         logger: LoggerPort,
         config: ConfigPort,
-        vector_store_repo: Union[VectorStorePort, None],
-        embeddings_port: Union[EmbeddingModelPort, None],
-        file_reader: "FileReaderPort",
+        vector_store_repo: VectorStorePort,
+        embeddings_port: EmbeddingModelPort,
+        file_reader: FileReaderPort,
+        s3_storage: CloudStoragePort,
+        local_storage: CloudStoragePort,
     ):
-        self.file_reader = file_reader  # Dependency injection of the file reader
+        self.file_reader = file_reader
         self.logger = logger
         self.config = config
         self.vector_store_repo = vector_store_repo
         self.embeddings = embeddings_port
+        self.s3_storage = s3_storage
+        self.local_storage = local_storage
 
     # def process(self, file_name: str, operations: list[str]) -> dict:
     #     """Processes the file and counts words and/or characters."""
@@ -50,13 +59,71 @@ class FileProcessorService(FileProcessorPort):
 
     #     return result
 
-    def process(self, name: str, operation: str) -> Sequence[BaseNode] | int:
-        if operation == "folder":
-            return self.ingest_folder(name)
-        elif operation == "file":
-            return self.ingest_pdf(name)
+    def process(self, cmd: Command) -> Sequence[BaseNode] | int:
+        match cmd:
+            case IngestPDFCmd():
+                return self.ingest_pdf(cmd.file_name)
+            case IngestFolderCmd():
+                return self.ingest_folder(cmd.folder_path)
+            case IngestCloudStorageCmd():
+                return self.ingest_cloud_storage(cmd.url, cmd.recursive)
+            case _:
+                raise ValueError(f"Unknown command type: {type(cmd)}")
+
+    def _get_storage_adapter(self, url: str) -> CloudStoragePort:
+        """Get the appropriate storage adapter for the URL."""
+        if url.startswith('s3://'):
+            return self.s3_storage
+        elif url.startswith('file://'):
+            return self.local_storage
         else:
-            return self.ingest_pdf(name)
+            raise ValueError(f'Unsupported URL scheme: {url}')
+
+    def ingest_cloud_storage(self, url: str, recursive: bool = False) -> int:
+        """Ingests files from a cloud storage URL."""
+        try:
+            # Get appropriate storage adapter
+            storage = self._get_storage_adapter(url)
+            
+            # List all files at the URL
+            files = storage.list_files(url, recursive=recursive)
+            
+            # Filter for PDF files
+            pdf_files = [f for f in files if f.lower().endswith('.pdf')]
+            if not pdf_files:
+                self.logger.warn(f"No PDF files found at {url}")
+                return 0
+                
+            processed = 0
+            temp_dir = tempfile.mkdtemp(prefix='cloud_storage_')
+            
+            try:
+                for file_url in pdf_files:
+                    # Download to temp location
+                    filename = os.path.basename(file_url)
+                    local_path = os.path.join(temp_dir, filename)
+                    
+                    try:
+                        storage.download_file(file_url, local_path)
+                        self.ingest_pdf(local_path)
+                        processed += 1
+                    except (ValueError, IOError) as e:
+                        self.logger.error(f"Failed to process {file_url}: {str(e)}")
+                        continue
+                    finally:
+                        # Clean up downloaded file
+                        if os.path.exists(local_path):
+                            os.unlink(local_path)
+                            
+                return processed
+            finally:
+                # Clean up temp directory
+                if os.path.exists(temp_dir):
+                    os.rmdir(temp_dir)
+                    
+        except Exception as e:
+            self.logger.error(f"Error processing cloud storage: {str(e)}")
+            raise
 
     def ingest_pdf(self, pdf_filepath: str) -> Sequence[BaseNode]:
         langchain_documents = PyPDFLoader(file_path=pdf_filepath).load()
@@ -68,13 +135,13 @@ class FileProcessorService(FileProcessorPort):
 
         splitter = SentenceSplitter(chunk_size=512, chunk_overlap=128)
         document_store = SimpleDocumentStore(namespace=doc_store_name)
-        embeddings_model = self.embeddings.get_model()  # type: ignore  # noqa: PGH003
+        embeddings_model = self.embeddings.get_model()
         model_name = embeddings_model.model_name
         pipeline = IngestionPipeline(
             transformations=[splitter, embeddings_model],
             docstore=document_store,
             vector_store=self.vector_store_repo.get_vector_store(collection_name=collection_name),
-        )  # type: ignore  # noqa: PGH003
+        )
 
         pipeline.load(persist_path) if os.path.exists(persist_path) else None
 
@@ -87,7 +154,7 @@ class FileProcessorService(FileProcessorPort):
 
         return nodes
 
-    def ingest_folder(self, folder_path: str):
+    def ingest_folder(self, folder_path: str) -> int:
         num_files = 0
         for root, dirs, files in os.walk(folder_path):
             for file in files:

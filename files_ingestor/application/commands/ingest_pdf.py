@@ -21,3 +21,14 @@ class IngestFolderCmd(Command):
 
     def name(self):
         return "Ingest Folder Command"
+
+
+class IngestCloudStorageCmd(Command):
+    """Encapsulates input parameters for cloud storage ingestion operations."""
+
+    def __init__(self, url: str, recursive: bool = True):
+        self.url: str = url
+        self.recursive: bool = recursive
+
+    def name(self):
+        return "Ingest Cloud Storage Command"
