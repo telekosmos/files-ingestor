@@ -37,20 +37,20 @@ class HttpApp:
         self.ingestion_handler = ingestor_handler
         self._setup_routes()
 
-    def _setup_routes(self):
+    def _setup_routes(self) -> None:
         self.app.get("/status")(self._status)
         self.app.post("/ingest-pdf")(self._upload_pdf)
         self.app.post("/ingest-folder")(self._upload_folder)
         self.app.post("/ingest-cloud")(self._ingest_cloud_storage)
 
-    async def _status(self):
+    async def _status(self) -> dict[str, str]:
         return {"status": "ok"}
 
-    async def _upload_pdf(self, file: UploadFile):
+    async def _upload_pdf(self, file: UploadFile) -> dict[str, str]:
         upload_dir = "./tmp/files_ingestor_uploads"
         os.makedirs(upload_dir, exist_ok=True)
 
-        file_path = os.path.join(upload_dir, file.filename)
+        file_path = os.path.join(upload_dir, file.filename)  # type: ignore # noqa: PGH003
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
 
@@ -62,9 +62,9 @@ class HttpApp:
             self.logger.error("Error processing PDF", error=e)  # noqa: TRY400
             return {"status": "error", "message": str(e)}
         else:
-            return {"status": "success", "filename": file.filename}
+            return {"status": "success", "filename": file.filename}  # type: ignore # noqa: PGH003
 
-    async def _upload_folder(self, folder_path: str):
+    async def _upload_folder(self, folder_path: str) -> dict[str, str | int]:
         if not os.path.exists(folder_path):
             raise ValueError(f"Folder {folder_path} does not exist")  # noqa: TRY003
 
@@ -76,7 +76,7 @@ class HttpApp:
         else:
             return {"status": "success", "num_files": num_files}
 
-    async def _ingest_cloud_storage(self, request: CloudStorageRequest):
+    async def _ingest_cloud_storage(self, request: CloudStorageRequest) -> dict[str, str | int]:
         """Ingest files from a cloud storage URL."""
         try:
             num_files = self.ingestion_handler.handle(
@@ -92,7 +92,7 @@ class HttpApp:
             return {"status": "success", "num_files": num_files}
 
 
-def create_http_app(logger: LoggerPort, query_handler: QAHandler, ingestor_handler: Handler):
+def create_http_app(logger: LoggerPort, query_handler: QAHandler, ingestor_handler: Handler) -> FastAPI:
     """Creates an HTTP app for processing files."""
     http_app = HttpApp(logger=logger, qa_handler=query_handler, ingestor_handler=ingestor_handler)
     return http_app.app

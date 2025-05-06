@@ -9,7 +9,7 @@ class IngestPDFCmd(Command):
     def __init__(self, filename: str):
         self.file_name: str = filename
 
-    def name(self):
+    def name(self) -> str:
         return "Ingest PDF Command"
 
 
@@ -19,7 +19,7 @@ class IngestFolderCmd(Command):
     def __init__(self, folder_path: str):
         self.folder_path: str = folder_path
 
-    def name(self):
+    def name(self) -> str:
         return "Ingest Folder Command"
 
 
@@ -30,5 +30,5 @@ class IngestCloudStorageCmd(Command):
         self.url: str = url
         self.recursive: bool = recursive
 
-    def name(self):
+    def name(self) -> str:
         return "Ingest Cloud Storage Command"

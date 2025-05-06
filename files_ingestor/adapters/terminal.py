@@ -12,7 +12,7 @@ class TerminalAdapter:
         self.handler = handler
         self.logger = logger
 
-    def run(self):
+    def run(self) -> None:
         """Runs the CLI interface."""
         file_name = input("Enter the file name: ")
         # operations = input("Enter the operations (words, characters, or both): ").split(",")

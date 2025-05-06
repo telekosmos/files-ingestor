@@ -11,11 +11,11 @@ class OllamaAdapter(FunctionCallingLLMPort):
         self.logger = logger
         self.model_name = model_name
         llama_index_model = Ollama(model=self.model_name, base_url="http://localhost:11434", request_timeout=300)
-        langchain_model = ChatOllama(model=self.model_name, base_url="http://localhost:11434", request_timeout=300)
+        langchain_model = ChatOllama(model=self.model_name, base_url="http://localhost:11434")
         self.models = {"llamaindex": llama_index_model, "langchain": langchain_model}
         self.logger.info(f"Using Ollama model {self.model_name}")
 
-    def get_model(self, library):
+    def get_model(self, library: str):  # type: ignore  # noqa: PGH003
         if library not in FunctionCallingLLMPort.__SUPPORTED_LIBRARIES:
             raise ValueError(f"Unsupported library: {library}")  # noqa: TRY003
 

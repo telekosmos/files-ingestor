@@ -1,7 +1,8 @@
 from typing import Optional
 
 from langchain_anthropic.chat_models import ChatAnthropic
-from llama_index.core.llms.function_calling import FunctionCallingLLM
+
+# from llama_index.core.llms.function_calling import FunctionCallingLLM
 from llama_index.llms.anthropic import Anthropic
 
 from files_ingestor.domain.ports.config import ConfigPort
@@ -20,7 +21,7 @@ class AnthropicAdapter(FunctionCallingLLMPort):
         self.models = {"llamaindex": llama_index_model, "langchain": langchain_model}
         self.logger.info(f"Using Anthropic {self.model_name}")
 
-    def get_model(self, library: str) -> FunctionCallingLLM:
+    def get_model(self, library: str):  # type: ignore # noqa: PGH003
         if library not in FunctionCallingLLMPort.__SUPPORTED_LIBRARIES:
             raise ValueError(f"Unsupported library: {library}")  # noqa: TRY003
 

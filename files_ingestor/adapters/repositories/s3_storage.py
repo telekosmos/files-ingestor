@@ -1,8 +1,8 @@
 import os
 from urllib.parse import urlparse
 
-import boto3
-from botocore.exceptions import ClientError
+import boto3  # type: ignore  # noqa: PGH003
+from botocore.exceptions import ClientError  # type: ignore  # noqa: PGH003
 
 from files_ingestor.domain.ports.cloud_storage_port import CloudStoragePort
 from files_ingestor.domain.ports.config import ConfigPort

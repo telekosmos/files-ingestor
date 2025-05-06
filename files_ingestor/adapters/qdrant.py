@@ -23,7 +23,7 @@ class QdrantRepository(VectorStorePort):
 
     def get_collections(self) -> list[str]:
         collections = self.qdrant_client.get_collections()
-        return [collection.name for collection in collections]
+        return [collection.name for collection in collections.collections]
 
     def get_vector_store(self, collection_name: str) -> BasePydanticVectorStore:
         vector_store = (

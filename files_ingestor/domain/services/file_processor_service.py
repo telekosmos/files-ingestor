@@ -44,20 +44,6 @@ class FileProcessorService(FileProcessorPort):
         self.s3_storage = s3_storage
         self.local_storage = local_storage
 
-    # def process(self, file_name: str, operations: list[str]) -> dict:
-    #     """Processes the file and counts words and/or characters."""
-    #     content = self.file_reader.read(file_name)
-    #     result = {}
-    #     self.logger.info(f"operations: {operations}")
-    #     if "words" in operations:
-    #         result["words"] = self.count_words(content)
-    #     if "characters" in operations:
-    #         result["characters"] = self.count_characters(content)
-    #     if operations == ["words", "characters"]:
-    #         result = {"characters": self.count_characters(content), "words": self.count_words(content)}
-
-    #     return result
-
     def process(self, cmd: Command) -> Sequence[BaseNode] | int:
         match cmd:
             case IngestPDFCmd():
