@@ -12,6 +12,9 @@ check: ## Run code quality tools.
 	@uv run pre-commit run -a
 	@echo "🚀 Static type checking: Running mypy"
 	@uv run mypy
+
+.PHONY: check-deps
+check-deps: ## Check for obsolete dependencies
 	@echo "🚀 Checking for obsolete dependencies: Running deptry"
 	@uv run deptry .
 
