@@ -1,71 +1,57 @@
-from unittest.mock import Mock, patch, call
+import unittest
+from unittest.mock import Mock, patch
+
 from files_ingestor.adapters.terminal import TerminalAdapter
-from files_ingestor.application.queries.count_file_query import CountFileQuery
-from files_ingestor.application.handlers.count_file_handler import CountFileHandler
+from files_ingestor.application.commands.ingest_pdf import IngestPDFCmd
+from files_ingestor.application.handlers.handler import Handler
 from files_ingestor.domain.ports.logger_port import LoggerPort
 
 
-def test_terminal_adapter_run_with_words():
-    # Mock the query handler to return a specific result
-    mock_handler = Mock(spec=CountFileHandler)
-    mock_handler.handle.return_value = {"words": 10}
+class TestTerminalAdapter(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures before each test method."""
+        self.mock_logger = Mock(spec=LoggerPort)
+        self.mock_handler = Mock(spec=Handler)
 
-    mock_logger: LoggerPort = Mock(spec=LoggerPort)
+        # Create the terminal adapter with mocked dependencies
+        self.adapter = TerminalAdapter(logger=self.mock_logger, handler=self.mock_handler)
 
-    # Create a TerminalAdapter instance
-    adapter = TerminalAdapter(mock_logger, mock_handler)
+    def test_run_with_pdf_ingestion(self):
+        """Test running the terminal adapter with PDF ingestion."""
+        # Mock the handler to return a specific result
+        test_file_name = "test_document.pdf"
+        expected_result = {"status": "processed", "file": test_file_name}
+        self.mock_handler.handle.return_value = expected_result
 
-    # Simulate user inputs
-    with patch('builtins.input', side_effect=['test.txt', 'words']):
-        adapter.run()
+        # Simulate user input for file name
+        with patch("builtins.input", return_value=test_file_name):
+            self.adapter.run()
 
-        # Assert that the query handler was called with correct parameters
-        assert mock_handler.handle.call_args[0][0].file_name == 'test.txt'
-        assert mock_handler.handle.call_args[0][0].operations == ['words']
+            # Assert that the handler was called with correct IngestPDFCmd
+            self.assertIsInstance(self.mock_handler.handle.call_args[0][0], IngestPDFCmd)
+            self.assertEqual(self.mock_handler.handle.call_args[0][0].file_name, test_file_name)
 
-        # Assert that the result was printed
-        # mock_print.assert_called_once_with("Result:", {"words": 10})
-        mock_logger.info.assert_called_once_with("Result: {'words': 10}")
+            # Assert that the result was logged
+            self.mock_logger.info.assert_called_once_with(f"Result: {expected_result}")
 
+    def test_run_with_different_file(self):
+        """Test running the terminal adapter with a different file."""
+        # Mock the handler to return a specific result
+        test_file_name = "another_document.pdf"
+        expected_result = {"status": "processed", "file": test_file_name}
+        self.mock_handler.handle.return_value = expected_result
 
-def test_terminal_adapter_run_with_characters():
-    # Mock the query handler to return a specific result
-    mock_handler = Mock(spec=CountFileHandler)
-    mock_handler.handle.return_value = {"characters": 50}
-    mock_logger: LoggerPort = Mock(spec=LoggerPort)
+        # Simulate user input for file name
+        with patch("builtins.input", return_value=test_file_name):
+            self.adapter.run()
 
-    # Create a TerminalAdapter instance
-    adapter = TerminalAdapter(mock_logger, mock_handler)
+            # Assert that the handler was called with correct IngestPDFCmd
+            self.assertIsInstance(self.mock_handler.handle.call_args[0][0], IngestPDFCmd)
+            self.assertEqual(self.mock_handler.handle.call_args[0][0].file_name, test_file_name)
 
-    # Simulate user inputs
-    with patch('builtins.input', side_effect=['example.txt', 'characters']):
-        adapter.run()
-
-        # Assert that the query handler was called with correct parameters
-        assert mock_handler.handle.call_args[0][0].file_name == 'example.txt'
-        assert mock_handler.handle.call_args[0][0].operations == ['characters']
-
-        # Assert that the result was printed
-        mock_logger.info.assert_called_once_with("Result: {'characters': 50}")
+            # Assert that the result was logged
+            self.mock_logger.info.assert_called_once_with(f"Result: {expected_result}")
 
 
-def test_terminal_adapter_run_with_both_operations():
-    # Mock the query handler to return a specific result
-    mock_handler = Mock(spec=CountFileHandler)
-    mock_handler.handle.return_value = {"words": 10, "characters": 50}
-    mock_logger: LoggerPort = Mock(spec=LoggerPort)
-
-    # Create a TerminalAdapter instance
-    adapter = TerminalAdapter(mock_logger, mock_handler)
-
-    # Simulate user inputs
-    with patch('builtins.input', side_effect=['test_file.txt', 'words,characters']):
-        # with patch('builtins.print') as mock_print:
-        adapter.run()
-
-        # Assert that the query handler was called with correct parameters
-        assert mock_handler.handle.call_args[0][0].file_name == 'test_file.txt'
-        assert mock_handler.handle.call_args[0][0].operations == ['words', 'characters']
-
-        # Assert that the result was printed
-        mock_logger.info.assert_called_once_with("Result: {'words': 10, 'characters': 50}")
+if __name__ == "__main__":
+    unittest.main()

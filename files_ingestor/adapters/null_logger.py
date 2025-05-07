@@ -4,7 +4,7 @@ from files_ingestor.domain.ports.logger_port import LoggerPort
 
 
 class NullLoggerAdapter(LoggerPort):
-    def __init__(self, logger_name='files_ingestor', log_level=logging.INFO):
+    def __init__(self, logger_name: str = "files_ingestor", log_level: int = logging.INFO) -> None:
         """
         Initialize the logger with a specific name and log level.
 

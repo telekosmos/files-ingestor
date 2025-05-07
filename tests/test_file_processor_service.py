@@ -1,154 +1,166 @@
-import dotenv
 import os
-
+import tempfile
 import unittest
+from unittest.mock import MagicMock, patch
 
-from torch import embedding
-from files_ingestor.adapters.llms.anthropic import AnthropicAdapter as AnthropicLLM
-from files_ingestor.adapters.llms.ollama import OllamaAdapter as OllamaLLM
-from files_ingestor.domain.ports.config import ConfigPort
-from files_ingestor.domain.ports.embedding_model import EmbeddingModelPort
-from files_ingestor.domain.ports.llm import FunctionCallingLLMPort
-from files_ingestor.domain.ports.vectorstore import VectorStorePort
+from files_ingestor.application.commands.ingest_pdf import IngestCloudStorageCmd
 from files_ingestor.domain.services.file_processor_service import FileProcessorService
-from files_ingestor.domain.ports.logger_port import LoggerPort
-from files_ingestor.adapters.null_logger import NullLoggerAdapter
 
-from files_ingestor.domain.services.react_agent import ReactAgent
-from files_ingestor.adapters.config import ConfigConfig
-from files_ingestor.adapters.qdrant import QdrantRepository
-from files_ingestor.adapters.embedding_models.ollama import OllamaEmbeddingModel
-
-from unittest.mock import Mock
-
-dotenv.load_dotenv()
 
 class TestFileProcessorService(unittest.TestCase):
     def setUp(self):
-        self.logger = NullLoggerAdapter()
-        self.file_reader = Mock()
-        self.mock_vector_store = Mock(spec=VectorStorePort)
-        self.mock_embeddings = Mock(spec=EmbeddingModelPort)
-        self.mock_config = Mock(spec=ConfigPort)
-        self.service = FileProcessorService(self.logger,
-                                            self.mock_config,
-                                            self.mock_vector_store,
-                                            self.mock_embeddings,
-                                            self.file_reader)
+        self.logger = MagicMock()
+        self.config = MagicMock()
+        self.vector_store = MagicMock()
+        self.embeddings = MagicMock()
+        self.file_reader = MagicMock()
+        self.s3_storage = MagicMock()
+        self.local_storage = MagicMock()
 
-    def test_process_with_words_operation(self):
+        # Mock embeddings model
+        embeddings_model = MagicMock()
+        embeddings_model.model_name = "test-model"
+        self.embeddings.get_model.return_value = embeddings_model
+
+        # Mock config values
+        self.config.get.side_effect = lambda key, default: {
+            "documentStores.bookstore.name": "test-store",
+            "documentStores.bookstore.props.path": "test-path",
+            "collections.book-library": "test-collection",
+        }.get(key, default)
+
+        self.service = FileProcessorService(
+            logger=self.logger,
+            config=self.config,
+            vector_store_repo=self.vector_store,
+            embeddings_port=self.embeddings,
+            file_reader=self.file_reader,
+            s3_storage=self.s3_storage,
+            local_storage=self.local_storage,
+        )
+
+    def test_ingest_cloud_storage_s3(self):
         # Arrange
-        file_name = "test.txt"
-        operations = ["words"]
-        content = "Hello world"
-        self.file_reader.read.return_value = content
+        url = "s3://bucket/folder/"
+        pdf_files = [
+            "s3://bucket/folder/doc1.pdf",
+            "s3://bucket/folder/doc2.pdf",
+        ]
+        self.s3_storage.list_files.return_value = pdf_files
+
+        # Create temp dir for downloads
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # Mock download to return paths in temp dir
+            def mock_download(url, path):
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, "w") as f:
+                    f.write("dummy content")
+                return path
+
+            self.s3_storage.download_file.side_effect = mock_download
+
+            # Mock ingest_pdf method
+            with patch.object(self.service, "ingest_pdf") as mock_ingest_pdf:
+                mock_ingest_pdf.return_value = []  # Return empty list of nodes
+
+                # Act
+                cmd = IngestCloudStorageCmd(url=url, recursive=True)
+                result = self.service.process(cmd)
+
+                # Assert
+                self.assertEqual(result, 2)  # Processed 2 files
+                self.s3_storage.list_files.assert_called_once_with(url, recursive=True)
+                self.assertEqual(self.s3_storage.download_file.call_count, 2)
+                self.assertEqual(mock_ingest_pdf.call_count, 2)
+                self.local_storage.list_files.assert_not_called()
+                self.local_storage.download_file.assert_not_called()
+
+        finally:
+            # Cleanup temp directory and its contents
+            for root, dirs, files in os.walk(temp_dir, topdown=False):
+                for name in files:
+                    os.unlink(os.path.join(root, name))
+                for name in dirs:
+                    os.rmdir(os.path.join(root, name))
+            os.rmdir(temp_dir)
+
+    def test_ingest_cloud_storage_local(self):
+        # Arrange
+        temp_dir = tempfile.mkdtemp()
+        url = f"file://{temp_dir}"
+
+        try:
+            # Create test files
+            pdf_path = os.path.join(temp_dir, "test.pdf")
+            with open(pdf_path, "w") as f:
+                f.write("dummy content")
+
+            txt_path = os.path.join(temp_dir, "test.txt")
+            with open(txt_path, "w") as f:
+                f.write("dummy txt")
+
+            self.local_storage.list_files.return_value = [f"file://{pdf_path}"]
+
+            # Mock ingest_pdf method
+            with patch.object(self.service, "ingest_pdf") as mock_ingest_pdf:
+                mock_ingest_pdf.return_value = []  # Return empty list of nodes
+
+                # Act
+                cmd = IngestCloudStorageCmd(url=url, recursive=False)
+                result = self.service.process(cmd)
+
+                # Assert
+                self.assertEqual(result, 1)  # Processed 1 PDF file
+                self.local_storage.list_files.assert_called_once_with(url, recursive=False)
+                self.local_storage.download_file.assert_called_once()
+                mock_ingest_pdf.assert_called_once()
+                self.s3_storage.list_files.assert_not_called()
+                self.s3_storage.download_file.assert_not_called()
+
+        finally:
+            # Cleanup
+            if os.path.exists(pdf_path):
+                os.unlink(pdf_path)
+            if os.path.exists(txt_path):
+                os.unlink(txt_path)
+            os.rmdir(temp_dir)
+
+    def test_ingest_cloud_storage_no_pdfs(self):
+        # Arrange
+        url = "s3://bucket/empty/"
+        self.s3_storage.list_files.return_value = ["s3://bucket/empty/doc.txt"]
 
         # Act
-        result = self.service.process(file_name, operations)
+        cmd = IngestCloudStorageCmd(url=url, recursive=True)
+        result = self.service.process(cmd)
 
         # Assert
-        self.assertEqual(result["words"], 2)
-        self.file_reader.read.assert_called_once_with(file_name)
+        self.assertEqual(result, 0)  # No PDFs processed
+        self.logger.warn.assert_called_once_with(f"No PDF files found at {url}")
+        self.local_storage.list_files.assert_not_called()
 
-    def test_process_with_characters_operation(self):
+    def test_ingest_cloud_storage_error_handling(self):
         # Arrange
-        file_name = "test.txt"
-        operations = ["characters"]
-        content = "Hello world"
-        self.file_reader.read.return_value = content
+        url = "s3://bucket/error/"
+        self.s3_storage.list_files.return_value = ["s3://bucket/error/doc.pdf"]
+        self.s3_storage.download_file.side_effect = OSError("Network error")
 
         # Act
-        result = self.service.process(file_name, operations)
+        cmd = IngestCloudStorageCmd(url=url, recursive=False)
+        result = self.service.process(cmd)
 
         # Assert
-        self.assertEqual(result["characters"], 11)
-        self.file_reader.read.assert_called_once_with(file_name)
+        self.assertEqual(result, 0)  # No files processed due to error
+        self.logger.error.assert_called_once()
+        self.local_storage.list_files.assert_not_called()
 
-    def test_process_with_both_operations(self):
+    def test_ingest_cloud_storage_unsupported_scheme(self):
         # Arrange
-        file_name = "test.txt"
-        operations = ["words", "characters"]
-        content = "Hello world"
-        self.file_reader.read.return_value = content
+        url = "ftp://server/folder/"
 
-        # Act
-        result = self.service.process(file_name, operations)
-
-        # Assert
-        self.assertEqual(result["words"], 2)
-        self.assertEqual(result["characters"], 11)
-        self.file_reader.read.assert_called_once_with(file_name)
-
-    def test_count_words(self):
-        # Arrange
-        content = "Hello world"
-
-        # Act
-        result = self.service.count_words(content)
-
-        # Assert
-        self.assertEqual(result, 2)
-
-    def test_count_characters(self):
-        # Arrange
-        content = "Hello world"
-
-        # Act
-        result = self.service.count_characters(content)
-
-        # Assert
-        self.assertEqual(result, 11)
-
-class TestIngestorService(unittest.TestCase):
-    def setUp(self):
-        self.logger = NullLoggerAdapter()
-        self.file_reader = Mock()
-        self.config = Mock(spec=ConfigPort)
-        # self.service = FileProcessorService(self.logger, self.file_reader)
-
-    def tearDown(self):
-        return super().tearDown()
-
-    # def zzz_test_pdf_ingestion(self):
-    #     qdrant_server = os.getenv("QDRANT_SERVER")
-    #     qdrant_repo = QdrantRepository(qdrant_server, self.logger)
-    #     pdf_filepath = "~/Workon/data/aws-overview.pdf"
-    #     service = FileProcessorService(self.logger,
-    #                                    self.mock_config,
-    #                                    vector_store_repo=qdrant_repo,
-    #                                    embeddings_port=OllamaEmbeddingModel(),
-    #                                    file_reader=self.file_reader)
-    #     nodes = service.ingest_pdf(pdf_filepath)
-    #     self.assertGreater(len(nodes), 0)
-
-    def zzz_test_ingest_folder(self):
-        # Arrange
-        folder_path = "test_folder"
-        pdf_file_1 = os.path.join(folder_path, "file1.pdf")
-        pdf_file_2 = os.path.join(folder_path, "file2.txt")  # Non-pdf file to be skipped
-
-        os.makedirs(folder_path, exist_ok=True)
-        with open(pdf_file_1, 'w') as f:
-            f.write("Sample PDF content")
-        with open(pdf_file_2, 'w') as f:
-            f.write("Non-PDF content")
-
-        mock_vector_store = Mock(spec=VectorStorePort)
-        mock_embeddings = Mock(spec=EmbeddingModelPort)
-
-        service = FileProcessorService(self.logger, self.config,
-                                        vector_store_repo=mock_vector_store,
-                                        embeddings_port=mock_embeddings,
-                                        file_reader=self.file_reader)
-
-        # Act
-        num_files = service.ingest_folder(folder_path)
-
-        # Assert
-        self.assertEqual(num_files, 1)  # Only one PDF file should be ingested
-        os.remove(pdf_file_1)
-        os.remove(pdf_file_2)
-        os.rmdir(folder_path)
-
-if __name__ == "__main__":
-    unittest.main()
+        # Act & Assert
+        cmd = IngestCloudStorageCmd(url=url, recursive=True)
+        with self.assertRaises(ValueError) as ctx:
+            self.service.process(cmd)
+        self.assertIn("Unsupported URL scheme", str(ctx.exception))

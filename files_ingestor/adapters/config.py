@@ -1,11 +1,12 @@
 from typing import Any, Optional
 
-import config
+import config  # type: ignore  # noqa: PGH003
 import dotenv
 
 from files_ingestor.domain.ports.config import ConfigPort
 
 dotenv.load_dotenv()
+
 
 class ConfigConfig(ConfigPort):
     def __init__(self, file_path: str | None = "config.json") -> None:
@@ -15,12 +16,8 @@ class ConfigConfig(ConfigPort):
     def get(self, key: str, default: Optional[Any] = None) -> Any:
         try:
             return self.cfg[key]
-        except config.ConfigError as ce:
+        except config.ConfigError:
             if default is not None:
                 return default
             else:
-                raise ce
-
-
-
-
+                raise

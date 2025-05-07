@@ -1,6 +1,6 @@
 import os
 
-# from llama_index.embeddings.huggingface_api.base import HuggingFaceInferenceAPIEmbedding
+# from llama_index.embeddings.huggingface_api.base import HuggingFaceInferenceAPIEmbedding
 from llama_index.embeddings.huggingface import HuggingFaceInferenceAPIEmbedding
 
 from files_ingestor.domain.ports.embedding_model import EmbeddingModelPort
@@ -13,4 +13,3 @@ class HuggingfaceEmbeddingModel(EmbeddingModelPort):
 
     def get_model(self) -> HuggingFaceInferenceAPIEmbedding:
         return self._model
- 
