@@ -11,14 +11,12 @@ from files_ingestor.adapters.repositories.file_reader import FileReaderAdapter
 from files_ingestor.adapters.repositories.local_storage import LocalStorageAdapter
 from files_ingestor.adapters.repositories.s3_storage import S3StorageAdapter
 from files_ingestor.application.handlers.ingestion_handler import IngestionHandler
-from files_ingestor.application.handlers.qa_handler import QAHandler
 from files_ingestor.domain.ports.cloud_storage_port import CloudStoragePort
 from files_ingestor.domain.ports.embedding_model import EmbeddingModelPort
 from files_ingestor.domain.ports.file_reader_port import FileReaderPort
 from files_ingestor.domain.ports.logger_port import LoggerPort
 from files_ingestor.domain.ports.vectorstore import VectorStorePort
 from files_ingestor.domain.services.file_processor_service import FileProcessorService
-from files_ingestor.domain.services.react_agent import ReactAgent
 
 # Instantiate adaptres for cross application concerns
 logger: LoggerPort = DefaultLoggerAdapter(log_level=logging.DEBUG)
@@ -44,17 +42,12 @@ file_processor_service = FileProcessorService(
 )
 
 logger.info(f"Creating react agent with llm {llm.model_name}")
-react_agent = ReactAgent(
-    embedding_model=embedding_model, llm=llm, vector_store=vector_repository, config=config, logger=logger
-)
-qa_handler = QAHandler(react_agent)
-
 # CQS commands and queries handlers
 ingestion_handler = IngestionHandler(file_processor_service)
 # ingestion_handler = IngestionFolderHandler(file_processor_service)
 
 # Run HTTP interface
-app = create_http_app(logger, query_handler=qa_handler, ingestor_handler=ingestion_handler)
+app = create_http_app(logger, ingestor_handler=ingestion_handler)
 
 
 def start() -> None:

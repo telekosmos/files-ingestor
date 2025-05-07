@@ -9,7 +9,6 @@ from files_ingestor.application.commands.ingest_pdf import (
     IngestPDFCmd,
 )
 from files_ingestor.application.handlers.handler import Handler
-from files_ingestor.application.handlers.qa_handler import QAHandler
 from files_ingestor.domain.ports.logger_port import LoggerPort
 
 
@@ -30,10 +29,9 @@ class CloudStorageRequest(BaseModel):
 
 
 class HttpApp:
-    def __init__(self, logger: LoggerPort, qa_handler: QAHandler, ingestor_handler: Handler):
+    def __init__(self, logger: LoggerPort, ingestor_handler: Handler):
         self.app = FastAPI()
         self.logger = logger
-        self.query_handler = qa_handler
         self.ingestion_handler = ingestor_handler
         self._setup_routes()
 
@@ -92,7 +90,7 @@ class HttpApp:
             return {"status": "success", "num_files": num_files}
 
 
-def create_http_app(logger: LoggerPort, query_handler: QAHandler, ingestor_handler: Handler) -> FastAPI:
+def create_http_app(logger: LoggerPort, ingestor_handler: Handler) -> FastAPI:
     """Creates an HTTP app for processing files."""
-    http_app = HttpApp(logger=logger, qa_handler=query_handler, ingestor_handler=ingestor_handler)
+    http_app = HttpApp(logger=logger, ingestor_handler=ingestor_handler)
     return http_app.app
