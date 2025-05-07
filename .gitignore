@@ -142,4 +142,4 @@ cython_debug/
 *.pdf
 files_ingestor/playground/
 data/langcache/
-
+IGNORE/
